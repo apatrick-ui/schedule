@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>School Day Tracker</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --card-hover: #222632;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #8ab4f8;
+      --green: #81c995;
+      --orange: #fdd663;
+      --red: #f28b82;
+      --purple: #c58af9;
+      --border: #2d3139;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .date-line {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .clock {
+      font-size: 3.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 12px 0 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .status-in { background: rgba(129, 201, 149, 0.18); color: var(--green); }
+    .status-passing { background: rgba(253, 214, 99, 0.18); color: var(--orange); }
+    .status-lunch { background: rgba(197, 138, 249, 0.18); color: var(--purple); }
+    .status-before { background: rgba(138, 180, 248, 0.18); color: var(--accent); }
+    .status-after { background: rgba(242, 139, 130, 0.18); color: var(--red); }
+    .status-weekend { background: rgba(154, 160, 166, 0.2); color: var(--muted); }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 560px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: background 0.2s;
+    }
+
+    .card:hover {
+      background: var(--card-hover);
+    }
+
+    .card.full {
+      grid-column: 1 / -1;
+    }
+
+    .card-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .card-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .progress-wrap {
+      margin-top: 14px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #2a2e3a;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.6s ease;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+    }
+
+    .progress-fill.green { background: linear-gradient(90deg, #34d399, var(--green)); }
+    .progress-fill.orange { background: linear-gradient(90deg, #fbbf24, var(--orange)); }
+    .progress-fill.red { background: linear-gradient(90deg, #f87171, var(--red)); }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .schedule-list {
+      list-style: none;
+    }
+
+    .schedule-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+
+    .schedule-item:last-child {
+      border-bottom: none;
+    }
+
+    .schedule-item.current {
+      background: rgba(138, 180, 248, 0.1);
+      margin: 0 -12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border-bottom: none;
+    }
+
+    .schedule-item .name {
+      font-weight: 600;
+    }
+
+    .schedule-item .time {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .schedule-item.current .name {
+      color: var(--accent);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .edit-note {
+      background: rgba(138, 180, 248, 0.08);
+      border: 1px dashed var(--accent);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .edit-note code {
+      background: #2a2e3a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>School Day Tracker</h1>
+      <div class="date-line" id="dateLine">—</div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="status-badge" id="statusBadge">Loading...</div>
+    </header>
+
+    <div class="edit-note">
+      <strong>Want your real schedule?</strong> Open this file, scroll to the <code>SCHEDULE</code> array near the top of the script, and change the names + times. Format is 24-hour <code>"HH:MM"</code>. Easy as hell.
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Current Period</div>
+        <div class="card-value" id="currentPeriod">—</div>
+        <div class="card-sub" id="periodRange">—</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Time Left in Period</div>
+        <div class="card-value" id="timeLeftPeriod">—</div>
+        <div class="card-sub" id="periodEnds">—</div>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" id="periodProgress" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">
+            <span id="periodPct">0%</span>
+            <span>done</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Time Left in School Day</div>
+        <div class="card-value" id="timeLeftDay">—</div>
+        <div class="card-sub" id="dayEnds">—</div>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill green" id="dayProgress" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">
+            <span id="dayPct">0%</span>
+            <span>of the day crushed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Up Next</div>
+        <div class="card-value" id="nextPeriod">—</div>
+        <div class="card-sub" id="nextStarts">—</div>
+      </div>
+
+      <div class="card full">
+        <div class="card-label">Full Schedule</div>
+        <ul class="schedule-list" id="scheduleList"></ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      Runs 100% in your browser • No data leaves your device • Refresh or leave open for live updates
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // ✏️  EDIT YOUR SCHEDULE HERE
+    // Times are 24-hour format "HH:MM"
+    // Order matters — put them in chronological order
+    // ============================================================
+    const SCHEDULE = [
+      { name: "Period 1",   start: "08:00", end: "08:50" },
+      { name: "Period 2",   start: "08:55", end: "09:45" },
+      { name: "Period 3",   start: "09:50", end: "10:40" },
+      { name: "Period 4",   start: "10:45", end: "11:35" },
+      { name: "Lunch",      start: "11:35", end: "12:05" },
+      { name: "Period 5",   start: "12:10", end: "13:00" },
+      { name: "Period 6",   start: "13:05", end: "13:55" },
+      { name: "Period 7",   start: "14:00", end: "14:50" },
+    ];
+
+    // School day bounds (used for "time left in day")
+    const DAY_START = "08:00";
+    const DAY_END   = "14:50";
+
+    // ============================================================
+    // Everything below just works. Don't touch unless you want to.
+    // ============================================================
+
+    function parseTime(str) {
+      const [h, m] = str.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    function minutesToTime(mins) {
+      const h = Math.floor(mins / 60) % 24;
+      const m = mins % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+
+    function formatDuration(mins) {
+      if (mins <= 0) return "0 min";
+      const h = Math.floor(mins / 60);
+      const m = Math.floor(mins % 60);
+      if (h === 0) return `${m} min`;
+      if (m === 0) return `${h} hr`;
+      return `${h} hr ${m} min`;
+    }
+
+    function formatClock(date) {
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      });
+    }
+
+    function getNowMinutes(date) {
+      return date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60;
+    }
+
+    function update() {
+      const now = new Date();
+      const day = now.getDay(); // 0 = Sun, 6 = Sat
+      const nowMins = getNowMinutes(now);
+
+      // Clock + date
+      document.getElementById("clock").textContent = formatClock(now);
+      document.getElementById("dateLine").textContent = now.toLocaleDateString([], {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+
+      const badge = document.getElementById("statusBadge");
+      const currentPeriodEl = document.getElementById("currentPeriod");
+      const periodRangeEl = document.getElementById("periodRange");
+      const timeLeftPeriodEl = document.getElementById("timeLeftPeriod");
+      const periodEndsEl = document.getElementById("periodEnds");
+      const periodProgressEl = document.getElementById("periodProgress");
+      const periodPctEl = document.getElementById("periodPct");
+      const timeLeftDayEl = document.getElementById("timeLeftDay");
+      const dayEndsEl = document.getElementById("dayEnds");
+      const dayProgressEl = document.getElementById("dayProgress");
+      const dayPctEl = document.getElementById("dayPct");
+      const nextPeriodEl = document.getElementById("nextPeriod");
+      const nextStartsEl = document.getElementById("nextStarts");
+      const scheduleList = document.getElementById("scheduleList");
+
+      // Weekend check
+      if (day === 0 || day === 6) {
+        badge.textContent = "Weekend — Go touch grass";
+        badge.className = "status-badge status-weekend";
+        currentPeriodEl.textContent = "Off";
+        periodRangeEl.textContent = "No school today";
+        timeLeftPeriodEl.textContent = "—";
+        periodEndsEl.textContent = "";
+        periodProgressEl.style.width = "0%";
+        periodPctEl.textContent = "0%";
+        timeLeftDayEl.textContent = "—";
+        dayEndsEl.textContent = "";
+        dayProgressEl.style.width = "0%";
+        dayPctEl.textContent = "0%";
+        nextPeriodEl.textContent = "Monday";
+        nextStartsEl.textContent = "See you then";
+        renderSchedule(null);
+        return;
+      }
+
+      const dayStartMins = parseTime(DAY_START);
+      const dayEndMins = parseTime(DAY_END);
+
+      // Before school
+      if (nowMins < dayStartMins) {
+        badge.textContent = "Before School";
+        badge.className = "status-badge status-before";
+        currentPeriodEl.textContent = "Not started";
+        periodRangeEl.textContent = `School starts at ${formatDisplay(DAY_START)}`;
+        timeLeftPeriodEl.textContent = formatDuration(dayStartMins - nowMins);
+        periodEndsEl.textContent = "until first bell";
+        periodProgressEl.style.width = "0%";
+        periodPctEl.textContent = "0%";
+
+        const leftDay = dayEndMins - nowMins;
+        timeLeftDayEl.textContent = formatDuration(leftDay);
+        dayEndsEl.textContent = `Ends at ${formatDisplay(DAY_END)}`;
+        dayProgressEl.style.width = "0%";
+        dayPctEl.textContent = "0%";
+
+        nextPeriodEl.textContent = SCHEDULE[0].name;
+        nextStartsEl.textContent = `Starts ${formatDisplay(SCHEDULE[0].start)}`;
+        renderSchedule(null);
+        return;
+      }
+
+      // After school
+      if (nowMins >= dayEndMins) {
+        badge.textContent = "School's Out — Freedom";
+        badge.className = "status-badge status-after";
+        currentPeriodEl.textContent = "Done";
+        periodRangeEl.textContent = "Day is over";
+        timeLeftPeriodEl.textContent = "—";
+        periodEndsEl.textContent = "";
+        periodProgressEl.style.width = "100%";
+        periodPctEl.textContent = "100%";
+        timeLeftDayEl.textContent = "0 min";
+        dayEndsEl.textContent = "You made it";
+        dayProgressEl.style.width = "100%";
+        dayPctEl.textContent = "100%";
+        nextPeriodEl.textContent = "Tomorrow";
+        nextStartsEl.textContent = "Same grind";
+        renderSchedule(null);
+        return;
+      }
+
+      // Find current period or passing time
+      let current = null;
+      let next = null;
+      let inPassing = false;
+
+      for (let i = 0; i < SCHEDULE.length; i++) {
+        const p = SCHEDULE[i];
+        const start = parseTime(p.start);
+        const end = parseTime(p.end);
+
+        if (nowMins >= start && nowMins < end) {
+          current = p;
+          next = SCHEDULE[i + 1] || null;
+          break;
+        }
+
+        // Passing period (between this end and next start)
+        if (i < SCHEDULE.length - 1) {
+          const nextStart = parseTime(SCHEDULE[i + 1].start);
+          if (nowMins >= end && nowMins < nextStart) {
+            current = { name: "Passing", start: p.end, end: SCHEDULE[i + 1].start };
+            next = SCHEDULE[i + 1];
+            inPassing = true;
+            break;
+          }
+        }
+      }
+
+      // Fallback (shouldn't hit)
+      if (!current) {
+        current = { name: "Unknown", start: DAY_START, end: DAY_END };
+      }
+
+      // Status badge
+      if (current.name.toLowerCase().includes("lunch")) {
+        badge.textContent = "Lunch Time 🍔";
+        badge.className = "status-badge status-lunch";
+      } else if (inPassing) {
+        badge.textContent = "Passing Period — Move your ass";
+        badge.className = "status-badge status-passing";
+      } else {
+        badge.textContent = "In Class";
+        badge.className = "status-badge status-in";
+      }
+
+      // Current period info
+      currentPeriodEl.textContent = current.name;
+      periodRangeEl.textContent = `${formatDisplay(current.start)} – ${formatDisplay(current.end)}`;
+
+      const curStart = parseTime(current.start);
+      const curEnd = parseTime(current.end);
+      const leftInPeriod = Math.max(0, curEnd - nowMins);
+      const periodLength = curEnd - curStart;
+      const doneInPeriod = Math.min(100, Math.max(0, ((nowMins - curStart) / periodLength) * 100));
+
+      timeLeftPeriodEl.textContent = formatDuration(leftInPeriod);
+      periodEndsEl.textContent = `Ends at ${formatDisplay(current.end)}`;
+      periodProgressEl.style.width = `${doneInPeriod}%`;
+      periodPctEl.textContent = `${Math.round(doneInPeriod)}%`;
+
+      // Color the period progress based on how little time is left
+      periodProgressEl.className = "progress-fill";
+      if (leftInPeriod <= 5) periodProgressEl.classList.add("red");
+      else if (leftInPeriod <= 15) periodProgressEl.classList.add("orange");
+      else periodProgressEl.classList.add("green");
+
+      // Day progress
+      const leftInDay = Math.max(0, dayEndMins - nowMins);
+      const dayLength = dayEndMins - dayStartMins;
+      const doneInDay = Math.min(100, Math.max(0, ((nowMins - dayStartMins) / dayLength) * 100));
+
+      timeLeftDayEl.textContent = formatDuration(leftInDay);
+      dayEndsEl.textContent = `Ends at ${formatDisplay(DAY_END)}`;
+      dayProgressEl.style.width = `${doneInDay}%`;
+      dayPctEl.textContent = `${Math.round(doneInDay)}%`;
+
+      // Next
+      if (next) {
+        nextPeriodEl.textContent = next.name;
+        nextStartsEl.textContent = `Starts ${formatDisplay(next.start)}`;
+      } else {
+        nextPeriodEl.textContent = "End of day";
+        nextStartsEl.textContent = "You're almost free";
+      }
+
+      renderSchedule(current.name);
+    }
+
+    function formatDisplay(timeStr) {
+      const [h, m] = timeStr.split(":").map(Number);
+      const ampm = h >= 12 ? "PM" : "AM";
+      const hour12 = h % 12 || 12;
+      return `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
+    }
+
+    function renderSchedule(currentName) {
+      const list = document.getElementById("scheduleList");
+      list.innerHTML = "";
+
+      SCHEDULE.forEach(p => {
+        const li = document.createElement("li");
+        li.className = "schedule-item";
+        if (currentName && p.name === currentName) {
+          li.classList.add("current");
+        }
+        li.innerHTML = `
+          <span class="name">${p.name}</span>
+          <span class="time">${formatDisplay(p.start)} – ${formatDisplay(p.end)}</span>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    // Kick it off
+    update();
+    setInterval(update, 1000);
+  </script>
+</body>
+</html>
